@@ -6,7 +6,7 @@ using UnityEngine;
 using KModkit;
 
 public class matchematicsScript : MonoBehaviour {
-
+	
 	public KMBombInfo Bomb;
 	public KMAudio Audio;
 
@@ -14,27 +14,27 @@ public class matchematicsScript : MonoBehaviour {
 	public GameObject[] sticks;
 	public GameObject[] heads;
 
-	int numA = 0;
-	int numB = 0;
-	int numC = 0;
-	int operation = 0; //0 = +, 1 = -, 2 = *, 3 = /, 4 = %?
-	int puzzleType = 0; //0 = add, 1 = remove, 2 = move?
-	int matchesToMove = 0;
-	int positionRNG = 0;
-	int confirmation = 0;
-	string bigString = "";
-	string stringA = "";
-	string stringB = "";
-	string stringC = "";
-	string operationSymbols = "+-*/%";
+	private int numA = 0;
+	private int numB = 0;
+	private int numC = 0;
+	private int operation = 0; //0 = +, 1 = -, 2 = *, 3 = /, 4 = %?
+	private int puzzleType = 0; //0 = add, 1 = remove, 2 = move?
+	private int matchesToMove = 0;
+	private int positionRNG = 0;
+	private int confirmation = 0;
+	private string bigString = "";
+	private string stringA = "";
+	private string stringB = "";
+	private string stringC = "";
+	private string operationSymbols = "+-*/%";
 	private List<String> sevenSegmentDigits = new List<string> { "1110111", "0010010", "1011101", "1011011", "0111010", "1101011", "1101111", "1010010", "1111111", "1111011" };
 
 	//Logging
-	static int moduleIdCounter = 1;
-	int moduleId;
+	private static int moduleIdCounter = 1;
+	private int moduleId;
 	private bool moduleSolved;
 
-	void Awake() {
+	private void Awake() {
 		moduleId = moduleIdCounter++;
 		/*/
 		foreach (KMSelectable object in keypad) {
@@ -47,16 +47,16 @@ public class matchematicsScript : MonoBehaviour {
 	}
 
 	// Use this for initialization
-	void Start() {
+	private void Start() {
 		Generate();
 	}
 	
 	// Update is called once per frame
-	void Update() {
+	private void Update() {
 		
 	}
 
-	void Generate() {
+	private void Generate() {
 		confirmation = 0;
 		numA = UnityEngine.Random.Range(0, 10);
 		numB = UnityEngine.Random.Range(0, 10);
