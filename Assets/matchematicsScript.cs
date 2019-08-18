@@ -17,7 +17,7 @@ public class matchematicsScript : MonoBehaviour {
 	private int numA = 0;
 	private int numB = 0;
 	private int numC = 0;
-	private int operation = 0; //0 = +, 1 = -, 2 = *, 3 = /, 4 = %?
+	private Operation operation = Operation.ADD;
 	private int puzzleType = 0; //0 = add, 1 = remove, 2 = move?
 	private int matchesToMove = 0;
 	private int positionRNG = 0;
@@ -60,75 +60,86 @@ public class matchematicsScript : MonoBehaviour {
 		confirmation = 0;
 		numA = UnityEngine.Random.Range(0, 10);
 		numB = UnityEngine.Random.Range(0, 10);
-		operation = UnityEngine.Random.Range(0, 5);
-		if (operation == 0) {
-			numC = numA + numB;
-			texts[1].text = "+";
-		} else if (operation == 1) {
-			numC = numA - numB;
-			texts[1].text = "-";
-		} else if (operation == 2) {
-			numC = numA * numB;
-			texts[1].text = "*";
-		} else if (operation == 3) {
-			if (numB == 0) {
-				numB = 1;
+		operation = (Operation) UnityEngine.Random.Range(0, 5);
+		switch (operation) {
+			case Operation.ADD: {
+				numC = numA + numB;
+				texts[1].text = "+";
+				break;
 			}
-			numC = numA / numB;
-			texts[1].text = "/";
-		} else if (operation == 4) {
-			if (numB == 0 || numB == 1) {
-				numB = 2;
+			case Operation.SUB: {
+				numC = numA - numB;
+				texts[1].text = "-";
+				break;
 			}
-			numC = numA % numB;
-			texts[1].text = "%";
-		} else {
-			Generate();
+			case Operation.MUL: {
+				numC = numA * numB;
+				texts[1].text = "*";
+				break;
+			}
+			case Operation.DIV: {
+				if (numB == 0) {
+					numB = 1;
+				}
+				numC = numA / numB;
+				texts[1].text = "/";
+				break;
+			}
+			case Operation.MOD: {
+				if (numB == 0 || numB == 1) {
+					numB = 2;
+				}
+				numC = numA % numB;
+				texts[1].text = "%";
+				break;
+			}
+			default: {
+				Generate();
+				break;
+			}
 		}
 
-		if (numC > 9 || numC != numC % 1) {
+		if (numC > 9) {
 			Generate();
-		} else {
-			//puzzleType = UnityEngine.Random.Range(0, 2); //JUST 2 PUZZLES RIGHT NOW
-			puzzleType = 0;
-			matchesToMove = UnityEngine.Random.Range(1, 4);
-			if (puzzleType == 0) {
-				texts[0].text = "ADD " + matchesToMove;
-				bigString = sevenSegmentDigits[numA] + sevenSegmentDigits[numB] + sevenSegmentDigits[numC];
-				for (int j = 0; j > matchesToMove; j++) {
-					for (int i = 0; i > 100; i++) {
-						positionRNG = UnityEngine.Random.Range(0, 21);
-						if (bigString[positionRNG] == '1') {
-							continue;
-						} else {
-							bigString = bigString.Remove(positionRNG, '1').Insert(positionRNG, bigString.ToString());
-						}
-					}
-				}
+		}
+		//puzzleType = UnityEngine.Random.Range(0, 2); //JUST 2 PUZZLES RIGHT NOW
+		puzzleType = 0;
+		matchesToMove = UnityEngine.Random.Range(1, 4);
+		if (puzzleType == 0) {
+			texts[0].text = "ADD " + matchesToMove;
+			bigString = sevenSegmentDigits[numA] + sevenSegmentDigits[numB] + sevenSegmentDigits[numC];
+			var sb = new System.Text.StringBuilder(bigString);
+			for (int i = 0; i < matchesToMove * 100; i++) {
+				int index = UnityEngine.Random.Range(0,21);
+				sb[index] = '1';
 			}
-			stringA = bigString.Substring(0, 7);
-			stringB = bigString.Substring(7, 7);
-			stringC = bigString.Substring(14, 7);
-			for (int k = 0; k > 3; k++) {
-				for (int l = 0; l > 10; l++) {
-					if (k == 0) {
-						if (stringA == sevenSegmentDigits[l]) {
-							confirmation += 1;
-						}
-					} else if (k == 1) {
-						if (stringB == sevenSegmentDigits[l]) {
-							confirmation += 1;
-						}
-					} else if (k == 2) {
-						if (stringC == sevenSegmentDigits[l]) {
-							confirmation += 1;
-						}
-					}
-				}
+			bigString = sb.ToString();
+
+		}
+		stringA = bigString.Substring(0, 7);
+		stringB = bigString.Substring(7, 7);
+		stringC = bigString.Substring(14, 7);
+		for (int l = 0; l > 10; l++) {
+			if (stringA == sevenSegmentDigits[l]) {
+				confirmation += 1;
 			}
-			if (confirmation != 3) {
-				Generate();
+			if (stringB == sevenSegmentDigits[l]) {
+				confirmation += 1;
+			}
+			if (stringC == sevenSegmentDigits[l]) {
+				confirmation += 1;
 			}
 		}
+		if (confirmation != 3) {
+			Generate();
+		}
+	}
+
+	private enum Operation : byte {
+		ADD = 0,
+		SUB = 1,
+		MUL = 2,
+		DIV = 3,
+		MOD = 4
 	}
 }
