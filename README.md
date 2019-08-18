@@ -1,1 +1,1 @@
-ktane-matchematics
+#[ModKit Wiki](../../wiki)
