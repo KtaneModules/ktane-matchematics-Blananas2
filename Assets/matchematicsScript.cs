@@ -40,6 +40,9 @@ public class matchematicsScript : MonoBehaviour {
 	private static int moduleIdCounter = 1;
 	private int moduleId;
 
+	private void Log(string message) {
+		Debug.Log("[Matchematics #"+moduleId+"] "+message);
+	}
 
 	private bool moduleSolved = false;
 
@@ -84,10 +87,10 @@ public class matchematicsScript : MonoBehaviour {
 		texts[0].text = puzzleType+" "+matchesToMove;
 		texts[1].text = ""+puzzle[3];
 		operation = (Operation) operationSymbols.IndexOf(puzzle[3]);
-		Debug.Log(puzzle+" "+puzzleType);
 		for (int i = 0; i < 3; i++) {
 			numbers[i] = int.Parse(""+puzzle[i]);
 		}
+		Log("LEVEL GENERATED: Level type:"+texts[0].text+" Initial digits:"+numbers[0]+numbers[1]+numbers[2]+" Operation:"+texts[1].text);
 		ResetDigits();
 	}
 
@@ -100,11 +103,10 @@ public class matchematicsScript : MonoBehaviour {
 	private bool TestInput() {
 		int A = digits[0].MatchConfiguration << 14 | digits[1].MatchConfiguration << 7 | digits[2].MatchConfiguration;
 		int B = sevenSegmentDigits[numbers[0]] << 14 | sevenSegmentDigits[numbers[1]] << 7 | sevenSegmentDigits[numbers[2]];
-		Debug.Log(Convert.ToString( A & ~B, 2));
-		Debug.Log(Convert.ToString(~A &  B, 2));
+		Log("SUBMITED:"+Convert.ToString(A,2)+" ORIGINAL:"+Convert.ToString(B,2));
 		int add = Convert.ToString( A & ~B, 2).Replace("0","").Length;
 		int rem = Convert.ToString(~A &  B, 2).Replace("0","").Length;
-		Debug.Log("Added:"+add+" Removed:"+rem);
+		Log("Added:"+add+" matches Removed:"+rem+" matches, Matches to change:"+matchesToMove);
 		//Check if correct amount of matches changed
 		switch (puzzleType) {
 			case PuzzleType.ADD: {
@@ -121,16 +123,19 @@ public class matchematicsScript : MonoBehaviour {
 			}
 			default: return true;
 		}
+		Log("Remove/Add match test passed");
 		//Check if matches form real numbers and get the values
 		var inputNum = new int[3];
 		for (int i = 0; i < 3; i++) {
 			inputNum[i] = Array.IndexOf(sevenSegmentDigits, digits[i].MatchConfiguration);
-			Debug.Log("NUM"+i+":"+inputNum[i]);
-			if (inputNum[i] == -1) return false;
+			if (inputNum[i] == -1) {
+				Log("Invalid digit at position "+i);
+				return false;
+			}
 		}
-
+		Log("All digits valid");
 		//Check if the numbers fit the equation
-		Debug.Log("Equation");
+		Log("Testing Equation "+(inputNum[0]+texts[1].text+inputNum[1]+"="+inputNum[2]));
 		return SatisfyEquation(inputNum[0], inputNum[1], inputNum[2], this.operation);
 	}
 
@@ -143,10 +148,6 @@ public class matchematicsScript : MonoBehaviour {
 			case Operation.MOD: return b != 0 && a % b == c;
 			default: return true;
 		}
-	}
-
-	private static bool RandomBool() {
-		return (UnityEngine.Random.Range(0, 2)==0);
 	}
 	
 	private enum Operation : byte {
