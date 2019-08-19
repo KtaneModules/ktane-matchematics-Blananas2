@@ -1,5 +1,7 @@
 ﻿using System;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 [RequireComponent(typeof(KMBombModule))]
 [RequireComponent(typeof(KMAudio))]
@@ -148,6 +150,41 @@ public class matchematicsScript : MonoBehaviour {
 			case Operation.MOD: return b != 0 && a % b == c;
 			default: return true;
 		}
+	}
+
+	[HideInInspector]
+	public string TwitchHelpMessage = "To write digits into the module. Use \"type/submit [3 digits]\" (submit presses the CONFIRM button). use \"reset\" to press the reset button.";
+	public List<KMSelectable> ProcessTwitchCommand(string command) {
+		var output = new List<KMSelectable>();
+		bool confirm = false;
+		bool type = false;
+		var nums = new int[3];
+		command = command.ToLowerInvariant();
+		var match = Regex.Match(command, "reset.*");
+		if (match.Success) {
+			output.Add(this.resetButton);
+			return output;
+		}
+		match = Regex.Match(command, "(?:type|submit)(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*");
+		if (match.Success) {
+			type = true;
+			for (int i = 0; i < 3; i++) {
+				nums[i] = int.Parse(match.Groups[i+1].Value);
+			}
+			if (command.StartsWith("submit")) confirm = true;
+		}
+		match = Regex.Match(command, "submit[^0-9]*");
+		if (match.Success) confirm = true;
+		if (type) {
+			for (int i = 0; i < 3; i++) {
+				int difference = sevenSegmentDigits[nums[i]] ^ this.digits[i].MatchConfiguration;
+				for (int j = 0; j < 7; j++) {
+					if ((difference & 1 << j) != 0) output.Add(this.digits[i][j].Selectable);
+				}
+			}
+		}
+		if (confirm) output.Add(this.confirmButton);
+		return output;
 	}
 	
 	private enum Operation : byte {

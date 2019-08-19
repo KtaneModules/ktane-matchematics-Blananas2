@@ -20,8 +20,10 @@ public class DigitManager : MonoBehaviour {
 		}
 	}
 
-	public int GetMatchConfiguration() {
-		return 0;
+	public MatchManager this[int i] {
+		get {
+			return this.matches[i];
+		}
 	}
 
 	public void SetAudio(KMAudio a) {
