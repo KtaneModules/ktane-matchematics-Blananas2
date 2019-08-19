@@ -1,161 +1,210 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using KModkit;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
+[RequireComponent(typeof(KMBombModule))]
+[RequireComponent(typeof(KMAudio))]
 public class matchematicsScript : MonoBehaviour {
 
-    public KMBombInfo Bomb;
-    public KMAudio Audio;
+	private new KMAudio audio;
+	private KMBombModule module;
 
-    public TextMesh[] texts; //0 = screenText, 1 = operation
-    public GameObject[] sticks;
-    public GameObject[] heads;
+	[SerializeField]
+	private TextMesh[] texts; //0 = screenText, 1 = operation
+	[SerializeField]
+	private DigitManager[] digits;
+	[SerializeField]
+	private KMSelectable confirmButton;
+	[SerializeField]
+	private KMSelectable resetButton;
 
-    int numA = 0;
-    int numB = 0;
-    int numC = 0;
-    int operation = 0; //0 = +, 1 = -, 2 = *, 3 = /, 4 = %?
-    int puzzleType = 0; //0 = add, 1 = remove, 2 = move?
-    int matchesToMove = 0;
-    int positionRNG = 0;
-    int confirmation = 0;
-    string bigString = "";
-    string stringA = "";
-    string stringB = "";
-    string stringC = "";
-    string operationSymbols = "+-*/%";
-    private List<String> sevenSegmentDigits = new List<string> { "1110111", "0010010", "1011101", "1011011", "0111010", "1101011", "1101111", "1010010", "1111111", "1111011" };
+	private int[] numbers = new int[3];
 
-    //Logging
-    static int moduleIdCounter = 1;
-    int moduleId;
-    private bool moduleSolved;
+	private Operation operation = Operation.ADD;
+	private PuzzleType puzzleType = PuzzleType.ADD;
+	private int matchesToMove = 0;
+	private string operationSymbols = "+-*/%";
+	private int[] sevenSegmentDigits = new int[] {
+		Convert.ToInt32("1110111".Reverse(), 2),
+		Convert.ToInt32("0010010".Reverse(), 2),
+		Convert.ToInt32("1011101".Reverse(), 2),
+		Convert.ToInt32("1011011".Reverse(), 2),
+		Convert.ToInt32("0111010".Reverse(), 2),
+		Convert.ToInt32("1101011".Reverse(), 2),
+		Convert.ToInt32("1101111".Reverse(), 2),
+		Convert.ToInt32("1010010".Reverse(), 2),
+		Convert.ToInt32("1111111".Reverse(), 2),
+		Convert.ToInt32("1111011".Reverse(), 2)
+	};
 
-    void Awake () {
-        moduleId = moduleIdCounter++;
-        /*/
-        foreach (KMSelectable object in keypad) {
-            KMSelectable pressedObject = object;
-            object.OnInteract += delegate () { keypadPress(pressedObject); return false; };
-        }
-        /*/
+	//Logging
+	private static int moduleIdCounter = 1;
+	private int moduleId;
 
-        //button.OnInteract += delegate () { PressButton(); return false; };
-        
-    }
-
-    // Use this for initialization
-    void Start () {
-        Generate();
-    }
-	
-	// Update is called once per frame
-	void Update () {
-		
+	private void Log(string message) {
+		Debug.Log("[Matchematics #"+moduleId+"] "+message);
 	}
 
-    void Generate ()
-    {
-        confirmation = 0;
-        numA = UnityEngine.Random.Range(0, 10);
-        numB = UnityEngine.Random.Range(0, 10);
-        operation = UnityEngine.Random.Range(0, 5);
-        if (operation == 0)
-        {
-            numC = numA + numB;
-            texts[1].text = "+";
-        } else if (operation == 1)
-        {
-            numC = numA - numB;
-            texts[1].text = "-";
-        } else if (operation == 2)
-        {
-            numC = numA * numB;
-            texts[1].text = "*";
-        } else if (operation == 3)
-        {
-            if (numB == 0)
-            {
-                numB = 1;
-            }
-            numC = numA / numB;
-            texts[1].text = "/";
-        } else if (operation == 4)
-        {
-            if (numB == 0 || numB == 1)
-            {
-                numB = 2;
-            }
-            numC = numA % numB;
-            texts[1].text = "%";
-        } else
-        {
-            Generate();
-        }
+	private bool moduleSolved = false;
 
-        if (numC > 9 || numC != numC % 1)
-        {
-            Generate();
-        } else
-        {
-            //puzzleType = UnityEngine.Random.Range(0, 2); //JUST 2 PUZZLES RIGHT NOW
-            puzzleType = 0;
-            matchesToMove = UnityEngine.Random.Range(1, 4);
-            if (puzzleType == 0)
-            {
-                texts[0].text = "ADD " + matchesToMove;
-                bigString = sevenSegmentDigits[numA] + sevenSegmentDigits[numB] + sevenSegmentDigits[numC];
-                for (int j = 0; j > matchesToMove; j++)
-                {
-                    for (int i = 0; i > 100; i++)
-                    {
-                        positionRNG = UnityEngine.Random.Range(0, 21);
-                        if (bigString[positionRNG] == '1')
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            bigString = bigString.Remove(positionRNG, '1').Insert(positionRNG, bigString.ToString());
-                        }
-                    }
-                }
-            }
-            stringA = bigString.Substring(0, 7);
-            stringB = bigString.Substring(7, 7);
-            stringC = bigString.Substring(14, 7);
-            for (int k = 0; k > 3; k++)
-            {
-                for (int l = 0; l > 10; l++)
-                {
-                    if (k == 0)
-                    {
-                        if (stringA == sevenSegmentDigits[l])
-                        {
-                            confirmation += 1;
-                        }
-                    } else if (k == 1)
-                    {
-                        if (stringB == sevenSegmentDigits[l])
-                        {
-                            confirmation += 1;
-                        }
-                    } else if (k == 2)
-                    {
-                        if (stringC == sevenSegmentDigits[l])
-                        {
-                            confirmation += 1;
-                        }
-                    }
-                }
-            }
-            if (confirmation != 3)
-            {
-                Generate();
-            }
-        }
-    }
+	private void Awake() {
+		moduleId = moduleIdCounter++;
+		module = this.GetComponent<KMBombModule>();
+		audio = this.GetComponent<KMAudio>();
+		for (int i = 0; i < 3; i++) {
+			this.digits[i].SetAudio(this.audio);
+		}
+	}
+
+	// Use this for initialization
+	private void Start() {
+		Generate();
+		confirmButton.OnInteract += delegate() {
+			this.audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, this.transform);
+			this.confirmButton.AddInteractionPunch();
+			if (moduleSolved) return false;
+			if (TestInput()) {
+				module.HandlePass();
+				moduleSolved = true;
+			} else {
+				module.HandleStrike();
+			}
+			return false;
+		};
+		resetButton.OnInteract += delegate() {
+			ResetDigits();
+			this.audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, this.transform);
+			resetButton.AddInteractionPunch();
+			return false;
+		};
+	}
+
+	private void Generate() {
+		puzzleType = (PuzzleType) UnityEngine.Random.Range(0, 3);
+		matchesToMove = UnityEngine.Random.Range(1, 4);
+		int nPuzzles  = MatcheMaticsData.puzzles[(int) puzzleType].Length;
+		string puzzle = MatcheMaticsData.puzzles[(int) puzzleType][UnityEngine.Random.Range(0, nPuzzles)];
+		matchesToMove = int.Parse(""+puzzle[4]);
+		texts[0].text = puzzleType+" "+matchesToMove;
+		texts[1].text = ""+puzzle[3];
+		operation = (Operation) operationSymbols.IndexOf(puzzle[3]);
+		for (int i = 0; i < 3; i++) {
+			numbers[i] = int.Parse(""+puzzle[i]);
+		}
+		Log("LEVEL GENERATED: Level type:"+texts[0].text+" Initial digits:"+numbers[0]+numbers[1]+numbers[2]+" Operation:"+texts[1].text);
+		ResetDigits();
+	}
+
+	private void ResetDigits() {
+		for (int i = 0; i < 3; i++) {
+			digits[i].MatchConfiguration = sevenSegmentDigits[numbers[i]];
+		}
+	}
+
+	private bool TestInput() {
+		int A = digits[0].MatchConfiguration << 14 | digits[1].MatchConfiguration << 7 | digits[2].MatchConfiguration;
+		int B = sevenSegmentDigits[numbers[0]] << 14 | sevenSegmentDigits[numbers[1]] << 7 | sevenSegmentDigits[numbers[2]];
+		Log("SUBMITED:"+Convert.ToString(A,2)+" ORIGINAL:"+Convert.ToString(B,2));
+		int add = Convert.ToString( A & ~B, 2).Replace("0","").Length;
+		int rem = Convert.ToString(~A &  B, 2).Replace("0","").Length;
+		Log("Added:"+add+" matches Removed:"+rem+" matches, Matches to change:"+matchesToMove);
+		//Check if correct amount of matches changed
+		switch (puzzleType) {
+			case PuzzleType.ADD: {
+				if (rem > 0 || add != matchesToMove) return false; 
+				break;
+			}
+			case PuzzleType.REMOVE: {
+				if (add > 0 || rem != matchesToMove) return false; 
+				break;
+			}
+			case PuzzleType.MOVE: {
+				if (add != rem || add != matchesToMove) return false; 
+				break;
+			}
+			default: return true;
+		}
+		Log("Remove/Add match test passed");
+		//Check if matches form real numbers and get the values
+		var inputNum = new int[3];
+		for (int i = 0; i < 3; i++) {
+			inputNum[i] = Array.IndexOf(sevenSegmentDigits, digits[i].MatchConfiguration);
+			if (inputNum[i] == -1) {
+				Log("Invalid digit at position "+i);
+				return false;
+			}
+		}
+		Log("All digits valid");
+		//Check if the numbers fit the equation
+		Log("Testing Equation "+(inputNum[0]+texts[1].text+inputNum[1]+"="+inputNum[2]));
+		return SatisfyEquation(inputNum[0], inputNum[1], inputNum[2], this.operation);
+	}
+
+	private static bool SatisfyEquation(int a, int b, int c, Operation op) {
+		switch (op) {
+			case Operation.ADD: return a + b == c;
+			case Operation.SUB: return a - b == c;
+			case Operation.MUL: return a * b == c;
+			case Operation.DIV: return b != 0 && a == b * c;
+			case Operation.MOD: return b != 0 && a % b == c;
+			default: return true;
+		}
+	}
+
+	[HideInInspector]
+	public string TwitchHelpMessage = "To write digits into the module. Use \"type/submit [3 digits]\" (submit presses the CONFIRM button). use \"reset\" to press the reset button.";
+	public List<KMSelectable> ProcessTwitchCommand(string command) {
+		var output = new List<KMSelectable>();
+		bool confirm = false;
+		bool type = false;
+		var nums = new int[3];
+		command = command.ToLowerInvariant();
+		var match = Regex.Match(command, "reset.*");
+		if (match.Success) {
+			output.Add(this.resetButton);
+			return output;
+		}
+		match = Regex.Match(command, "(?:type|submit)(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*");
+		if (match.Success) {
+			type = true;
+			for (int i = 0; i < 3; i++) {
+				nums[i] = int.Parse(match.Groups[i+1].Value);
+			}
+			if (command.StartsWith("submit")) confirm = true;
+		}
+		match = Regex.Match(command, "submit[^0-9]*");
+		if (match.Success) confirm = true;
+		if (type) {
+			for (int i = 0; i < 3; i++) {
+				int difference = sevenSegmentDigits[nums[i]] ^ this.digits[i].MatchConfiguration;
+				for (int j = 0; j < 7; j++) {
+					if ((difference & 1 << j) != 0) output.Add(this.digits[i][j].Selectable);
+				}
+			}
+		}
+		if (confirm) output.Add(this.confirmButton);
+		return output;
+	}
+	
+	private enum Operation : byte {
+		ADD = 0,
+		SUB = 1,
+		MUL = 2,
+		DIV = 3,
+		MOD = 4
+	}
+	private enum PuzzleType : byte {
+		REMOVE = 0,
+		ADD = 1,
+		MOVE = 2
+	}
+}
+
+public static class Extensions {
+	public static string Reverse(this string input) {
+		char[] chars = input.ToCharArray();
+		Array.Reverse(chars);
+		return new String(chars);
+	}
 }
