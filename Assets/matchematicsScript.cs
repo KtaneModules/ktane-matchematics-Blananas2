@@ -2,10 +2,10 @@
 using UnityEngine;
 
 [RequireComponent(typeof(KMBombModule))]
+[RequireComponent(typeof(KMAudio))]
 public class matchematicsScript : MonoBehaviour {
 
-	public KMBombInfo Bomb;
-	public KMAudio Audio;
+	private new KMAudio audio;
 	private KMBombModule module;
 
 	[SerializeField]
@@ -37,19 +37,27 @@ public class matchematicsScript : MonoBehaviour {
 	};
 
 	//Logging
-	private static int moduleIdCounter = 0;
+	private static int moduleIdCounter = 1;
 	private int moduleId;
+
+
 	private bool moduleSolved = false;
 
 	private void Awake() {
 		moduleId = moduleIdCounter++;
 		module = this.GetComponent<KMBombModule>();
+		audio = this.GetComponent<KMAudio>();
+		for (int i = 0; i < 3; i++) {
+			this.digits[i].SetAudio(this.audio);
+		}
 	}
 
 	// Use this for initialization
 	private void Start() {
 		Generate();
 		confirmButton.OnInteract += delegate() {
+			this.audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, this.transform);
+			this.confirmButton.AddInteractionPunch();
 			if (moduleSolved) return false;
 			if (TestInput()) {
 				module.HandlePass();
@@ -57,11 +65,11 @@ public class matchematicsScript : MonoBehaviour {
 			} else {
 				module.HandleStrike();
 			}
-			confirmButton.AddInteractionPunch();
 			return false;
 		};
 		resetButton.OnInteract += delegate() {
 			ResetDigits();
+			this.audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, this.transform);
 			resetButton.AddInteractionPunch();
 			return false;
 		};

@@ -19,17 +19,14 @@ public class DigitManager : MonoBehaviour {
 			}
 		}
 	}
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
 
 	public int GetMatchConfiguration() {
 		return 0;
+	}
+
+	public void SetAudio(KMAudio a) {
+		for (int i = 0; i < 7; i++) {
+			this.matches[i].SetAudio(a);
+		}
 	}
 }

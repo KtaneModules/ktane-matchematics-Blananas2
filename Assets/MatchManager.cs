@@ -7,6 +7,7 @@ public class MatchManager : MonoBehaviour {
 	[SerializeField]
 	private GameObject match;
 	private KMSelectable selectable;
+	private new KMAudio audio = null;
 
 	public bool state {
 		get {return _state;}
@@ -23,8 +24,13 @@ public class MatchManager : MonoBehaviour {
 		state = state;
 		selectable.OnInteract += delegate() {
 			state = !state;
+			if (this.audio != null) this.audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, this.transform);
 			selectable.AddInteractionPunch(0.5f);
 			return false;
 		};
+	}
+
+	public void SetAudio(KMAudio a) {
+		this.audio = a;
 	}
 }
