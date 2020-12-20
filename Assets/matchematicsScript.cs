@@ -165,7 +165,8 @@ public class matchematicsScript : MonoBehaviour {
 		}
 		bool submit = command.Contains("submit");
 		bool type = submit || command.Contains("type");
-		match = Regex.Match(command, "(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*");
+		//Check for exactly 3 digits in the command
+		match = Regex.Match(command, "^(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*$");
 		if (match.Success) {
 			for (int i = 0; i < 3; i++) {
 				nums[i] = int.Parse(match.Groups[i+1].Value);
@@ -179,7 +180,8 @@ public class matchematicsScript : MonoBehaviour {
 				}
 			}
 		}
-		if (submit) output.Add(this.confirmButton);
+		//Press submit only if there is 3 or 0 digits
+		if (submit && (match.Success || !Regex.Match(command, "[0-9]").Success)) output.Add(this.confirmButton);
 		return output;
 	}
 	
