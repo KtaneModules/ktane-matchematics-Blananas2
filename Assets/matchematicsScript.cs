@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Collections;
 
@@ -54,30 +55,46 @@ public class matchematicsScript : MonoBehaviour
     private void Awake()
     {
         moduleId = moduleIdCounter++;
-        module = this.GetComponent<KMBombModule>();
-        audio = this.GetComponent<KMAudio>();
+        module = GetComponent<KMBombModule>();
+        audio = GetComponent<KMAudio>();
         for (int i = 0; i < 3; i++)
         {
-            this.digits[i].SetAudio(this.audio);
+            digits[i].SetAudio(audio);
         }
     }
 
-    // Use this for initialization
+    private void LogMatches(int a, int b, int c)
+    {
+        var textA = Convert.ToString(a, 2);
+        var textB = Convert.ToString(b, 2);
+        var textC = Convert.ToString(c, 2);
+        while (textA.Length < 7) textA = "0" + textA;
+        while (textB.Length < 7) textB = "0" + textB;
+        while (textC.Length < 7) textC = "0" + textC;
+        Debug.LogFormat("[Matchematics #{0}] {1} {4} {2} = {3}", moduleId, textA, textB, textC, texts[1].text);
+    }
+
     private void Start()
     {
         Generate();
         confirmButton.OnInteract += delegate ()
         {
-            this.audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, this.transform);
-            this.confirmButton.AddInteractionPunch();
-            if (moduleSolved) return false;
-            if (TestInput(digits[0].MatchConfiguration, digits[1].MatchConfiguration, digits[2].MatchConfiguration, true))
+            audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, transform);
+            confirmButton.AddInteractionPunch();
+            if (moduleSolved)
+                return false;
+            var arr = new[] { digits[0].MatchConfiguration, digits[1].MatchConfiguration, digits[2].MatchConfiguration };
+            Debug.LogFormat("[Matchematics #{0}] Submitting:", moduleId);
+            LogMatches(arr[0], arr[1], arr[2]);
+            if (TestInput(arr[0], arr[1], arr[2], true))
             {
+                Debug.LogFormat("[Matchematics #{0}] Correct answer. Module solved!", moduleId);
                 module.HandlePass();
                 moduleSolved = true;
             }
             else
             {
+                Debug.LogFormat("[Matchematics #{0}] Incorrect answer. Strike.", moduleId);
                 module.HandleStrike();
             }
             return false;
@@ -85,7 +102,7 @@ public class matchematicsScript : MonoBehaviour
         resetButton.OnInteract += delegate ()
         {
             ResetDigits();
-            this.audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, this.transform);
+            audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, transform);
             resetButton.AddInteractionPunch();
             return false;
         };
@@ -102,11 +119,14 @@ public class matchematicsScript : MonoBehaviour
         texts[1].text = "" + puzzle[3];
         operation = (Operation)operationSymbols.IndexOf(puzzle[3]);
         for (int i = 0; i < 3; i++)
-        {
             numbers[i] = int.Parse("" + puzzle[i]);
-        }
-        Log("LEVEL GENERATED: Level type:" + texts[0].text + " Initial digits:" + numbers[0] + numbers[1] + numbers[2] + " Operation:" + texts[1].text);
+        Debug.LogFormat("[Matchematics #{0}] Equation:", moduleId, numbers[0], texts[1].text, numbers[1], numbers[2]);
+        LogMatches(_segmentArrs[numbers[0]], _segmentArrs[numbers[1]], _segmentArrs[numbers[2]]);
+        Debug.LogFormat("[Matchematics #{0}] Required action: {1}", moduleId, texts[0].text);
         ResetDigits();
+        var sol = GetAnswer();
+        Debug.LogFormat("[Matchematics #{0}] Possible answer:", moduleId, sol.A, texts[1].text, sol.B, sol.C);
+        LogMatches(_segmentArrs[sol.A], _segmentArrs[sol.B], _segmentArrs[sol.C]);
     }
 
     private void ResetDigits()
@@ -121,12 +141,8 @@ public class matchematicsScript : MonoBehaviour
     {
         int A = a << 14 | b << 7 | c;
         int B = sevenSegmentDigits[numbers[0]] << 14 | sevenSegmentDigits[numbers[1]] << 7 | sevenSegmentDigits[numbers[2]];
-        if (canLog)
-            Log("SUBMITED:" + Convert.ToString(A, 2) + " ORIGINAL:" + Convert.ToString(B, 2));
         int add = Convert.ToString(A & ~B, 2).Replace("0", "").Length;
         int rem = Convert.ToString(~A & B, 2).Replace("0", "").Length;
-        if (canLog)
-            Log("Added:" + add + " matches Removed:" + rem + " matches, Matches to change:" + matchesToMove);
         //Check if correct amount of matches changed
         switch (puzzleType)
         {
@@ -147,8 +163,6 @@ public class matchematicsScript : MonoBehaviour
                 }
             default: return true;
         }
-        if (canLog)
-            Log("Remove/Add match test passed");
         //Check if matches form real numbers and get the values
         var inputNum = new int[3];
         var arr = new[] { a, b, c };
@@ -157,17 +171,11 @@ public class matchematicsScript : MonoBehaviour
             inputNum[i] = Array.IndexOf(sevenSegmentDigits, arr[i]);
             if (inputNum[i] == -1)
             {
-                if (canLog)
-                    Log("Invalid digit at position " + i);
                 return false;
             }
         }
-        if (canLog)
-            Log("All digits valid");
         //Check if the numbers fit the equation
-        if (canLog)
-            Log("Testing Equation " + (inputNum[0] + texts[1].text + inputNum[1] + "=" + inputNum[2]));
-        return SatisfyEquation(inputNum[0], inputNum[1], inputNum[2], this.operation);
+        return SatisfyEquation(inputNum[0], inputNum[1], inputNum[2], operation);
     }
 
     private static bool SatisfyEquation(int a, int b, int c, Operation op)
@@ -190,36 +198,32 @@ public class matchematicsScript : MonoBehaviour
         var output = new List<KMSelectable>();
         var nums = new int[3];
         command = command.ToLowerInvariant();
-        var match = Regex.Match(command, "reset.*");
         if (command.Contains("reset"))
         {
-            output.Add(this.resetButton);
+            output.Add(resetButton);
             return output;
         }
         bool submit = command.Contains("submit");
         bool type = submit || command.Contains("type");
         //Check for exactly 3 digits in the command
-        match = Regex.Match(command, "^(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*$");
+        var match = Regex.Match(command, "^(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*([0-9])(?:[^0-9])*$");
         if (match.Success)
         {
             for (int i = 0; i < 3; i++)
-            {
                 nums[i] = int.Parse(match.Groups[i + 1].Value);
-            }
             if (type)
             {
                 for (int i = 0; i < 3; i++)
                 {
-                    int difference = sevenSegmentDigits[nums[i]] ^ this.digits[i].MatchConfiguration;
+                    int difference = sevenSegmentDigits[nums[i]] ^ digits[i].MatchConfiguration;
                     for (int j = 0; j < 7; j++)
-                    {
-                        if ((difference & 1 << j) != 0) output.Add(this.digits[i][j].Selectable);
-                    }
+                        if ((difference & 1 << j) != 0) output.Add(digits[i][j].Selectable);
                 }
             }
         }
         //Press submit only if there is 3 or 0 digits
-        if (submit && (match.Success || !Regex.Match(command, "[0-9]").Success)) output.Add(this.confirmButton);
+        if (submit && (match.Success || !Regex.Match(command, "[0-9]").Success))
+            output.Add(confirmButton);
         return output;
     }
 
@@ -236,27 +240,31 @@ public class matchematicsScript : MonoBehaviour
         }
     }
 
-    private IEnumerator TwitchHandleForcedSolve()
+    private static readonly int[] _segmentArrs = new int[10] { 119, 36, 93, 109, 46, 107, 123, 37, 127, 111 };
+
+    private MatchematicsAnswer GetAnswer()
     {
-        var segs = new int[10] { 119, 36, 93, 109, 46, 107, 123, 37, 127, 111 };
         var list = new List<MatchematicsAnswer>();
         var sol = new MatchematicsAnswer(-1, -1, -1);
         for (int a = 0; a < 10; a++)
             for (int b = 0; b < 10; b++)
                 for (int c = 0; c < 10; c++)
-                    if (SatisfyEquation(a, b, c, operation))
-                        list.Add(new MatchematicsAnswer(a, b, c));
-        for (int i = 0; i < list.Count; i++)
-            if (TestInput(segs[list[i].A], segs[list[i].B], segs[list[i].C], false))
-                sol = new MatchematicsAnswer(list[i].A, list[i].B, list[i].C);
+                    if (SatisfyEquation(a, b, c, operation) && TestInput(_segmentArrs[a], _segmentArrs[b], _segmentArrs[c], false))
+                        sol = new MatchematicsAnswer(a, b, c);
+        return sol;
+    }
+
+    private IEnumerator TwitchHandleForcedSolve()
+    {
+        var sol = GetAnswer();
         var btns = new List<KMSelectable>();
         for (int i = 0; i < 3; i++)
         {
             var num = new[] { sol.A, sol.B, sol.C }[i];
-            int difference = sevenSegmentDigits[num] ^ this.digits[i].MatchConfiguration;
+            int difference = sevenSegmentDigits[num] ^ digits[i].MatchConfiguration;
             for (int j = 0; j < 7; j++)
                 if ((difference & 1 << j) != 0)
-                    btns.Add(this.digits[i][j].Selectable);
+                    btns.Add(digits[i][j].Selectable);
         }
         btns.Add(confirmButton);
         yield return null;
