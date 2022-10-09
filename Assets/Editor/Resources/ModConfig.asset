@@ -14,7 +14,8 @@ MonoBehaviour:
   id: matchematics
   title: Matchematics
   author: Blananas2
-  description: idk
+  description: "Can you make the match?\r\n\r\nModule ID: matchematics\r\nIdea by
+    Blananas2\r\nImplemented by IQuick143\r\n\r\nThe manual can be found here: https://ktane.timwi.de/HTML/Matchematics.html"
   version: 1.0
   outputFolder: build
   previewImage: {fileID: 0}

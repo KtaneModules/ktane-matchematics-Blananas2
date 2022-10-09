@@ -244,7 +244,7 @@ public class matchematicsScript : MonoBehaviour
 
     private MatchematicsAnswer GetAnswer()
     {
-        var list = new List<MatchematicsAnswer>();
+        //var list = new List<MatchematicsAnswer>();
         var sol = new MatchematicsAnswer(-1, -1, -1);
         for (int a = 0; a < 10; a++)
             for (int b = 0; b < 10; b++)
